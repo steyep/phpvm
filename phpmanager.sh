@@ -17,6 +17,8 @@ The following commands are supported:
    use [version]             : Specify a version of PHP to use.
    add [version]             : Specify a version of PHP to install.
    remove, rm [version]      : Specify a version of PHP to remove.
+   revert                    : Revert Apache config
+                             : to before phpvm was installed
    config <options>          : Configure \`$SCRIPT\`
 
 The following options are supported:
@@ -36,10 +38,12 @@ installed_versions() {
 }
 
 list_versions() {
+  active="\x1b[32;01m*\x1b[39;49;00m"
   local current=$(php -v | head -n1 | sed -E 's/PHP ([0-9]+)\.([0-9])+.+/php\1\2/')
-  for ver in $(installed_versions); do
+  local list=$(installed_versions)
+  for ver in ${list:-"Unable to locate any versions"}; do
     [[ "$ver" == "$current" ]] && 
-      echo "* $ver" ||
+      echo "$active $ver" ||
       echo "  $ver"
   done
   exit 0
@@ -83,11 +87,23 @@ remove_version() {
   exit 0
 }
 
+restore_apache_config() {
+  for path in $BACKUP/*; do
+    config=$(echo $(basename $path) | base64 -D)
+    test -w $config &&
+      cp $path $config || 
+      sudo cp $path $config
+  done
+  exit 0
+}
+
 while [[ $# > 0 ]]; do
 key="$1"
   case $key in
     list|ls)
       list_versions ;;
+    revert)
+      restore_apache_config ;;
     use)
       version="$2"
       [[ "$version" ]] && shift 2 || shift ;;
