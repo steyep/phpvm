@@ -9,7 +9,7 @@ APACHE_ENABLED=0
 link_profile() {
   if [[ -f $PROFILE ]]; then
     [[ "$(grep $CONFIG $PROFILE)" ]] ||
-    echo '\n[ -f '$CONFIG' ] && source '$CONFIG >> $PROFILE
+    echo '\ntest -f '${CONFIG/#$HOME/\$HOME}' && source '${CONFIG/#$HOME/\$HOME}' || true' >> $PROFILE
   else
     echo "Unable to locate shell profile"
     echo "You may need to create one: \`touch $HOME/.profile\`"
