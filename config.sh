@@ -5,6 +5,7 @@ BACKUP=$(dirname $BASH_SOURCE)/backup
 PROFILE=
 APACHE_CONFIG='/etc/apache2/httpd.conf'
 APACHE_ENABLED=0
+EXTENSIONS=
 
 link_profile() {
   if [[ -f $PROFILE ]]; then
@@ -26,7 +27,7 @@ set_config() {
       link_profile
     fi 
     case $var in 
-      PROFILE|APACHE_ENABLED|APACHE_CONFIG)
+      PROFILE|APACHE_ENABLED|APACHE_CONFIG|EXTENSIONS)
         update_config $var $val ;;
     esac
     shift
@@ -47,6 +48,7 @@ cat > $CONFIG <<END_CONFIG
 PROFILE=$PROFILE
 APACHE_ENABLED=$APACHE_ENABLED
 APACHE_CONFIG=$APACHE_CONFIG
+EXTENSIONS=$EXTENSIONS
 
 $PHP_PATH
 END_CONFIG

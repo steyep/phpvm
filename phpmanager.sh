@@ -71,6 +71,15 @@ add_version() {
   else
     brew install $version
   fi
+  echo "Installing extensions..."
+  for ext in ${EXTENSIONS//,/ }; do
+    ext=$version-$ext
+    ext=(`brew search $ext | grep -Eo "$ext"`)
+    if [[ "$ext" ]]; then
+      echo "Installing $ext..."
+      brew install $ext
+    fi 
+  done
   exit 0
 }
 
