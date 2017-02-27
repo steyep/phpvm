@@ -1,5 +1,14 @@
 CONFIG=$HOME/.phpvm
 BACKUP=$(dirname $BASH_SOURCE)/backup
+CONFIG_VAR=${CONFIG/#$HOME/\$HOME}
+
+pushd $(dirname $BASH_SOURCE) > /dev/null
+  BACKUP='../etc'
+  mkdir -p $BACKUP/{apache,profile} 
+  cd $BACKUP
+  BACKUP="$PWD/apache"
+  BACKUP_PROFILE="$PWD/profile"
+popd > /dev/null
 
 # Set some default values for the variables
 PROFILE=
@@ -9,8 +18,10 @@ EXTENSIONS=
 
 link_profile() {
   if [[ -f $PROFILE ]]; then
-    [[ "$(grep $CONFIG $PROFILE)" ]] ||
-    echo '\ntest -f '${CONFIG/#$HOME/\$HOME}' && source '${CONFIG/#$HOME/\$HOME}' || true' >> $PROFILE
+    local profile_backup="$BACKUP_PROFILE/$(echo "$PROFILE" | base64)"
+    test -f $profile_backup || cp $PROFILE $profile_backup
+    [[ "$(grep $CONFIG_VAR $PROFILE)" ]] ||
+    echo '\ntest -f '$CONFIG_VAR' && source '$CONFIG_VAR' || true' >> $PROFILE
   else
     echo "Unable to locate shell profile"
     echo "You may need to create one: \`touch $HOME/.profile\`"

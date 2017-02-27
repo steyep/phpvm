@@ -1,13 +1,20 @@
 #! /bin/sh
-pushd $(dirname "$0") > /dev/null
-  script_dir="$PWD"
-  test -L "$0" && script_dir="$(dirname "$(readlink "$0")")"
-  source $script_dir/config.sh
+
+# Handle more than one symlink
+SCRIPT="$0"
+while test -L "$SCRIPT"; do
+  SCRIPT="$(readlink "$SCRIPT")"
+done
+
+pushd $(dirname "$SCRIPT") > /dev/null
+  lib_dir="../libexec"
+  source $lib_dir/config.sh
   source $CONFIG
 popd > /dev/null
 
+
 VERBOSE=0
-SCRIPT=$(basename "$0")
+SCRIPT=$(basename "$SCRIPT")
 USAGE=$(cat <<EOF_USAGE
 
 Usage: $SCRIPT <options>
@@ -18,7 +25,7 @@ The following commands are supported:
    add [version]             : Specify a version of PHP to install.
    remove, rm [version]      : Specify a version of PHP to remove.
    revert                    : Revert Apache config
-                             : to before phpvm was installed
+                             : to before $SCRIPT was installed
    config <options>          : Configure \`$SCRIPT\`
 
 The following options are supported:
@@ -160,8 +167,8 @@ save_config
 if [[ "$APACHE_ENABLED" == "1" ]]; then
   # Do we need to run as root?
   test -w $APACHE_CONFIG &&
-    sh $script_dir/apache.sh $version ||
-    sudo sh $script_dir/apache.sh $version
+    sh $lib_dir/apache.sh $version ||
+    sudo sh $lib_dir/apache.sh $version
 fi
 
 exec $SHELL

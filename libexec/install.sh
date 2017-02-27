@@ -25,31 +25,9 @@ get_apache() {
 
 # Get profile
 get_profile() {
-  local shell=$(basename $SHELL)
-  local profile=
-  if [[ "$shell" == "bash" ]]; then
-    if [ -f "$HOME/.bashrc" ]; then
-        profile="$HOME/.bashrc"
-    elif [ -f "$HOME/.bash_profile" ]; then
-      profile="$HOME/.bash_profile"
-    fi
-  elif [ "$shell" = "zsh" ]; then
-    profile="$HOME/.zshrc"
-  fi
-
-  if [ -z "$profile" ]; then
-    if [ -f "$HOME/.profile" ]; then
-      profile="$HOME/.profile"
-    elif [ -f "$HOME/.bashrc" ]; then
-      profile="$HOME/.bashrc"
-    elif [ -f "$HOME/.bash_profile" ]; then
-      profile="$HOME/.bash_profile"
-    elif [ -f "$HOME/.zshrc" ]; then
-      profile="$HOME/.zshrc"
-    fi
-  fi
-  echo $profile
+  source $script_dir/get_profile.sh
 }
+
 test -d $BACKUP || mkdir $BACKUP
 PROFILE=$(get_profile)
 APACHE_CONFIG=$(get_apache)
