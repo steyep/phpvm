@@ -7,7 +7,7 @@ while test -L "$SCRIPT"; do
 done
 
 pushd $(dirname "$SCRIPT") > /dev/null
-  lib_dir="../libexec"
+  lib_dir="$(dirname $PWD)/libexec"
   source $lib_dir/config.sh
   source $CONFIG
 popd > /dev/null
@@ -34,6 +34,11 @@ The following options are supported:
  
 EOF_USAGE
 )
+
+success() {
+  local message="$@"
+  echo '\033[0;32m\xE2\x9C\x94\033[0m '$message
+}
 
 show_help() {
   echo "$USAGE" >&2
@@ -96,10 +101,27 @@ remove_version() {
     echo "Oops! You don't have \"$version\" installed."
     exit 0
   fi
-  brew unlink $version && brew rm $version
-  local match=$(grep -E "LoadModule.*$version" $APACHE_CONFIG | sed 's_/_\\/_g')
-  sed -i.bak "/${match}/d" $APACHE_CONFIG
-  echo "Removed \"$version\"!"
+  # Unlink the formula
+  brew unlink $version
+  # Check for installed extensions and determine how to proceed
+  local exts="$(brew uses --installed $version)"
+  if [[ "$exts" ]]; then
+    echo "$version is used by:\n$exts"
+    read -p "Remove dependants? [Y/n]: " res
+    # Remove dependants if 'Y'
+    [[ "$res" =~ ^Y ]] && brew rm $exts
+  fi
+  # Remove this version
+  brew rm --ignore-dependencies $version
+  old_ifs=$IFS
+  IFS=$'\n'
+  # Remove references to the removed version from the httpd.conf
+  local matches=$(grep -E "LoadModule.*$version" $APACHE_CONFIG | sed 's_\/_\\/_g')
+  for match in $matches; do
+    sed -i.bak "/${match}/d" $APACHE_CONFIG && rm $APACHE_CONFIG.bak
+  done
+  IFS=$old_ifs
+  success $version removed
   exit 0
 }
 
