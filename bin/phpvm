@@ -79,7 +79,8 @@ add_version() {
   fi
   unlink_all
   if [[ "$APACHE_ENABLED" == "1" ]]; then
-    brew install $version --with-httpd24
+    apache_option="$(brew options $version | grep -- '--with-httpd')"
+    brew install $version $apache_option
   else
     brew install $version
   fi
@@ -178,7 +179,7 @@ unlink_all && brew link $version
 # Add linked PHP version to $PATH
 PHP_PATH=$(cat <<PHP_RC
 PATH=\$(echo \$PATH | awk 'BEGIN { RS=":"; A=0; } { if (\$1 ~ "php") next; printf ((A == 0) ? "" : ":") \$1; A=1; }')
-export PATH="$(brew --prefix homebrew/php/$version)/bin:\$PATH"
+export PATH="$(brew --prefix steyep/php/$version)/bin:\$PATH"
 PHP_RC
 )
 save_config
