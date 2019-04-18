@@ -29,7 +29,7 @@ if [[ "$module" ]]; then
   fi
 
   # Comment out PHP interpretters
-  interpretter="${version:0:4}-script"
+  interpretter="$(echo $version | awk -F '[^0-9]+' '{ print "php"$2"-script" }')"
   sed -E -i'.bak' s_^\(\[^#\]*php.-script.+\)\$_#\ \\1_g $APACHE_CONFIG
   # If the interpretter is already in the config, uncomment it
   if grep -E "AddHandler.+$interpretter" $APACHE_CONFIG > /dev/null; then
@@ -39,7 +39,7 @@ if [[ "$module" ]]; then
     for pattern in "AddHandler.*php" "LoadModule"; do
       match=$(grep -E $pattern $APACHE_CONFIG | tail -n 1 | sed 's_/_\\/_g')
       test "$match" && break
-    done  
+    done
     sed -i'.bak' -e "/${match}/a"$'\\\n'"AddHandler $interpretter .php"$'\n' $APACHE_CONFIG
   fi
   rm $APACHE_CONFIG.bak
@@ -47,7 +47,7 @@ if [[ "$module" ]]; then
   # Restart Apache - if it's running
   if [[ "$APACHE_RUN" ]]; then
     echo "Restarting Apache"
-    [[ "$APACHE_ROOT" ]] && 
+    [[ "$APACHE_ROOT" ]] &&
       sudo apachectl restart ||
       apachectl restart
   fi

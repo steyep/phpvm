@@ -18,7 +18,7 @@ SCRIPT=$(basename "$SCRIPT")
 USAGE=$(cat <<EOF_USAGE
 
 Usage: $SCRIPT <options>
-    
+
 The following commands are supported:
    list, ls                  : List installed PHP versions.
    use [version]             : Specify a version of PHP to use.
@@ -31,7 +31,7 @@ The following commands are supported:
 The following options are supported:
    --verbose, -v             : Verbose output.
    --help, -h                : Show this message.
- 
+
 EOF_USAGE
 )
 
@@ -46,15 +46,15 @@ show_help() {
 }
 
 installed_versions() {
-  echo $(brew list | grep -E '^php\d+$')
+  echo $(brew ls | grep -E '^php[0-9@.]+$')
 }
 
 list_versions() {
   active="\x1b[32;01m*\x1b[39;49;00m"
-  local current=$(php -v | head -n1 | sed -E 's/PHP ([0-9]+)\.([0-9])+.+/php\1\2/')
+  local current=$(which php | grep -Eo 'php[0-9@.]+')
   local list=$(installed_versions)
   for ver in ${list:-"Unable to locate any versions"}; do
-    [[ "$ver" == "$current" ]] && 
+    [[ "$ver" == "$current" ]] &&
       echo "$active $ver" ||
       echo "  $ver"
   done
@@ -64,10 +64,35 @@ list_versions() {
 # Unlink all brew php versions
 unlink_all() {
   for ver in $(installed_versions); do
+    # Newer versions use PECL and extensions must be removed differently.
+    if which php | grep -q '@'; then
+      pecl_extensions=$(pecl list)
+      for extensions in $(pecl config-get ext_dir)/*.so; do
+        extension_file=$(basename $extensions)
+        extension="${extension_file%%.*}"
+        echo $pecl_extensions | grep -q ^$extension && pecl uninstall -r $extension
+      done
+    fi
     [[ "$VERBOSE" == "1" ]] &&
-      brew unlink $ver || 
+      brew unlink $ver ||
       brew unlink $ver 1>/dev/null
   done
+}
+
+# Unlink all brew php versions
+link_version() {
+  local version="$1"
+  local pecl_path="$(find -L $(brew --prefix $version) -type d -name 'pecl' 2>/dev/null)"
+  if [[ "$pecl_path" ]]; then
+    brew link --force $version
+    for extensions in $(find -L $pecl_path -type f -name '*.so'); do
+      extension_file=$(basename $extensions)
+      extension="${extension_file%%.*}"
+      pecl install $extension
+    done
+  else
+    brew link $version
+  fi
 }
 
 add_version() {
@@ -91,7 +116,7 @@ add_version() {
     if [[ "$ext" ]]; then
       echo "Installing $ext..."
       brew install $ext
-    fi 
+    fi
   done
   exit 0
 }
@@ -130,7 +155,7 @@ restore_apache_config() {
   for path in $BACKUP/*; do
     config=$(echo $(basename $path) | base64 -D)
     test -w $config &&
-      cp $path $config || 
+      cp $path $config ||
       sudo cp $path $config
   done
   exit 0
@@ -152,7 +177,7 @@ key="$1"
       add_version ;;
     remove|rm)
       version="$2"
-      [[ "$version" ]] && shift 2 || shift 
+      [[ "$version" ]] && shift 2 || shift
       remove_version ;;
     config)
       shift && set_config $@
@@ -165,7 +190,7 @@ key="$1"
 done
 
 test -z $version && show_help
-if ! brew ls --versions "$version" > /dev/null; then 
+if ! brew ls --versions "$version" > /dev/null; then
   echo "$version not found."
   exit 0
 fi
@@ -174,12 +199,12 @@ fi
 # CLI
 ###
 # Unlink all brew php versions then link the specified version
-unlink_all && brew link $version
+unlink_all && link_version $version
 
 # Add linked PHP version to $PATH
 PHP_PATH=$(cat <<PHP_RC
 PATH=\$(echo \$PATH | awk 'BEGIN { RS=":"; A=0; } { if (\$1 ~ "php") next; printf ((A == 0) ? "" : ":") \$1; A=1; }')
-export PATH="$(brew --prefix steyep/php/$version)/bin:\$PATH"
+export PATH="$(brew --prefix $version)/bin:\$PATH"
 PHP_RC
 )
 save_config
