@@ -61,16 +61,28 @@ list_versions() {
   exit 0
 }
 
+# Get a list of PECL extensions
+get_pecl_extensions() {
+  local version="$1"
+  local pecl_path="$(find -L $(brew --cellar $version) -path "*$version*" -type d -name 'pecl' 2>/dev/null)"
+  if [[ "$pecl_path" ]]; then
+    for extensions in $(find -L $pecl_path -type f -name '*.so'); do
+      extension_file=$(basename $extensions)
+      extension="${extension_file%%.*}"
+      echo $extension
+    done
+  fi
+}
+
 # Unlink all brew php versions
 unlink_all() {
+  local pecl_extensions=''
   for ver in $(installed_versions); do
     # Newer versions use PECL and extensions must be removed differently.
-    if which php | grep -q '@'; then
-      pecl_extensions=$(pecl list)
-      for extensions in $(pecl config-get ext_dir)/*.so; do
-        extension_file=$(basename $extensions)
-        extension="${extension_file%%.*}"
-        echo $pecl_extensions | grep -q ^$extension && pecl uninstall -r $extension
+    pecl_extensions="$(get_pecl_extensions $ver)"
+    if [[ "$pecl_extensions" ]]; then
+      for extension in $pecl_extensions; do
+        pecl uninstall -r $extension
       done
     fi
     [[ "$VERBOSE" == "1" ]] &&
@@ -79,15 +91,13 @@ unlink_all() {
   done
 }
 
-# Unlink all brew php versions
+# Link all brew php versions
 link_version() {
   local version="$1"
-  local pecl_path="$(find -L $(brew --prefix $version) -type d -name 'pecl' 2>/dev/null)"
-  if [[ "$pecl_path" ]]; then
+  local pecl_extensions="$(get_pecl_extensions $version)"
+  if [[ "$pecl_extensions" ]]; then
     brew link --force $version
-    for extensions in $(find -L $pecl_path -type f -name '*.so'); do
-      extension_file=$(basename $extensions)
-      extension="${extension_file%%.*}"
+    for extensions in $pecl_extensions; do
       pecl install $extension
     done
   else
