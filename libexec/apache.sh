@@ -29,7 +29,7 @@ if [[ "$module" ]]; then
   fi
 
   # Comment out PHP interpretters
-  interpretter="$(echo $version | awk -F '[^0-9]+' '{ print "php"$2"-script" }')"
+  interpretter="$(echo $version | awk -F '[^0-9]+' '{ print "php"substr($2, 0, 1)"-script" }')"
   sed -E -i'.bak' s_^\(\[^#\]*php.-script.+\)\$_#\ \\1_g $APACHE_CONFIG
   # If the interpretter is already in the config, uncomment it
   if grep -E "AddHandler.+$interpretter" $APACHE_CONFIG > /dev/null; then
