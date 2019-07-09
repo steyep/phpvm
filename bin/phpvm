@@ -66,11 +66,15 @@ get_pecl_extensions() {
   local version="$1"
   local pecl_path="$(find -L $(brew --cellar $version) -path "*$version*" -type d -name 'pecl' 2>/dev/null)"
   if [[ "$pecl_path" ]]; then
+    local hashmap=$(mktemp -d)
     for extensions in $(find -L $pecl_path -type f -name '*.so'); do
       extension_file=$(basename $extensions)
       extension="${extension_file%%.*}"
+      test -f $hashmap/$extension && continue
+      touch $hashmap/$extension
       echo $extension
     done
+    rm -rf $hashmap &> /dev/null
   fi
 }
 
@@ -113,22 +117,24 @@ add_version() {
     exit 0
   fi
   unlink_all
-  if [[ "$APACHE_ENABLED" == "1" ]]; then
+  php_from_tap=$(echo "$version" | grep -q '@' && echo 0 || echo 1)
+  if [[ "$php_from_tap" == "1" && "$APACHE_ENABLED" == "1" ]]; then
     apache_option="$(brew options $version | grep -- '--with-httpd')"
     brew install $version $apache_option
   else
     brew install $version
   fi
-  echo "Installing extensions..."
-  for ext in ${EXTENSIONS//,/ }; do
-    ext=$version-$ext
-    ext=(`brew search $ext | grep -Eo "$ext"`)
-    if [[ "$ext" ]]; then
-      echo "Installing $ext..."
-      brew install $ext
-    fi
-  done
-  exit 0
+  if [[ "$php_from_tap" == "1" ]]; then
+    echo "Installing extensions..."
+    for ext in ${EXTENSIONS//,/ }; do
+      ext=$version-$ext
+      ext=(`brew search $ext | grep -Eo "$ext"`)
+      if [[ "$ext" ]]; then
+        echo "Installing $ext..."
+        brew install $ext
+      fi
+    done
+  fi
 }
 
 remove_version() {
