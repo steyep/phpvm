@@ -220,7 +220,7 @@ unlink_all && link_version $version
 # Add linked PHP version to $PATH
 PHP_PATH=$(cat <<PHP_RC
 PATH=\$(echo \$PATH | awk 'BEGIN { RS=":"; A=0; } { if (\$1 ~ "php") next; printf ((A == 0) ? "" : ":") \$1; A=1; }')
-export PATH="$(brew --prefix $version)/bin:\$PATH"
+export PATH="$(brew --prefix $version)/bin:\$PATH:${SCRIPT_DIR}/bin"
 PHP_RC
 )
 save_config
