@@ -1,9 +1,9 @@
 ## php-version-manager
-A wrapper script for [homebrew](http://brew.sh/) that will allow for easy switching between php environments. 
+A wrapper script for [homebrew](http://brew.sh/) that will allow for easy switching between php environments.
 
 ### Installation:
 1. Clone the repo
-2. Run the install script: `sh ./install.sh`
+2. Run the install script: `sh ./libexec/install.sh`
 
 ### Usage:
 ```
@@ -23,6 +23,6 @@ The following options are supported:
 ### Options
 * Configure php-version-manager by running `phpvm config [...]` and defining as many of the following variables as you'd like:
   * `PROFILE=path/to/.profile` – location of your `.bashrc`, `.zshrc`, etc.
-  * `APACHE_CONFIG=path/to/httpd.conf` – location of the `httpd.conf` Apache is using 
+  * `APACHE_CONFIG=path/to/httpd.conf` – location of the `httpd.conf` Apache is using
   * `APACHE_ENABLED=[0|1]` – Ensure Apache has the correct `php_module` loaded for the specified version of PHP and run `apachectl restart` when the value is set to `1`. Default is `0`. Note: depending on your setup, this may require `sudo` privileges.
   * `EXTENSIONS=memcache,xdebug` – a comma delimited list of extensions to be installed (via homebrew) when adding a new managed version of php.
